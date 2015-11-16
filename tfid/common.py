@@ -2,11 +2,17 @@
 import numpy as np
 import pyximport, os
 from distutils.extension import Extension 
-ext_modules = [Extension('_mandelbrot', ['_mandelbrot.pyx'],
+ext_modules = [Extension('_tfid', ['_tfid.pyx'],
                           extra_compile_args=['-fopenmp', '-O3', '-march=native'], 
-                          extra_link_args=['-fopenmp'])] 
+                          extra_link_args=['-fopenmp']),
+               Extension('_mandelbrot', ['_mandelbrot.pyx'],
+                          extra_compile_args=['-fopenmp', '-O3', '-march=native'], 
+                          extra_link_args=['-fopenmp']) ] 
 pyximport.install(setup_args={"include_dirs": [np.get_include(), os.curdir], 'ext_modules': ext_modules})
+from _tfid import tfid
+
 from _mandelbrot import mandelbrot
+
 
 # a helpful timer class that can be used by the "with" statement
 import time
