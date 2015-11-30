@@ -8,7 +8,7 @@ if platform.system() == 'Darwin':
     if os.path.exists('/usr/local/lib/libiomp5.dylib'):
         extra_link_args = ['-L/usr/local/lib', '-liomp5']
 
-def make_ext(modname, pyxfilename):
+def make_ext_c(modname, pyxfilename):
     from distutils.extension import Extension
     return Extension(name=modname,
                      sources=[pyxfilename],
@@ -20,3 +20,19 @@ def make_ext(modname, pyxfilename):
                                          '-I{}'.format(np.get_include()),
                                          '-I.'],
                      extra_link_args=extra_link_args)
+
+def make_ext_cpp(modname, pyxfilename):
+    from distutils.extension import Extension
+    return Extension(name=modname,
+                     sources=[pyxfilename],
+                     extra_compile_args=['-Wno-unused-function',
+                                         '-std=c++11',
+                                         '-stdlib=libc++',
+                                         '-lc++',
+                                         '-Ofast',
+                                         '-march=native',
+                                         '-fopenmp',
+                                         '-I{}'.format(np.get_include()),
+                                         '-I.'],
+                     extra_link_args=extra_link_args,
+                     language="c++")
