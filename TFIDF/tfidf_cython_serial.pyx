@@ -18,7 +18,6 @@ from omp_defs cimport omp_lock_t, get_N_locks, free_N_locks, acquire, release
 
 cimport AVX_cpp as AVX
 
-
 def preallocate_locks(num_locks) :
     cdef omp_lock_t *locks = get_N_locks(num_locks)
     assert 0 != <uintptr_t> <void *> locks, "could not allocate locks"
@@ -186,19 +185,52 @@ cpdef init_tfidfs(unsigned num_indices) :
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef calculate_tfidfs(unsigned num_indices) :
+cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
   global tfidf_vectors, idf_vector, tf_vectors
   cdef:
+    AVX.float8 tfidf_float8, result_float8
+    AVX.float8 *idf_float8s
     unsigned i, j
-  for i in prange(num_questions,
-                  nogil=True, 
-                  chunksize=num_questions/8, 
-                  num_threads=num_threads, 
-                  schedule="static") :
-    for j in xrange(num_indices) :
-      tfidf_vectors[i, j] *= idf_vector[j]
-  return tfidf_vectors
 
+  if AVX_f :
+    print "Using AVX"
+    assert(num_indices % 8 == 0)
+    idf_float8s = <AVX.float8 *>malloc(num_indices / 8 * sizeof(AVX.float8))
+    for j in range(0, num_indices, 8) :
+        idf_float8s[j/8] = AVX.make_float8(tfidf_vectors[i,j+7],
+                                  tfidf_vectors[i,j+6],
+                                  tfidf_vectors[i,j+5],
+                                  tfidf_vectors[i,j+4],
+                                  tfidf_vectors[i,j+3],
+                                  tfidf_vectors[i,j+2],
+                                  tfidf_vectors[i,j+1],
+                                  tfidf_vectors[i,j])
+
+    for i in prange(num_questions,
+                    nogil=True, 
+                    chunksize=num_questions/4, 
+                    num_threads=num_threads, 
+                    schedule="static") :
+      for j in range(0, num_indices, 8) :
+        tfidf_float8 = AVX.make_float8(tfidf_vectors[i,j+7],
+                                  tfidf_vectors[i,j+6],
+                                  tfidf_vectors[i,j+5],
+                                  tfidf_vectors[i,j+4],
+                                  tfidf_vectors[i,j+3],
+                                  tfidf_vectors[i,j+2],
+                                  tfidf_vectors[i,j+1],
+                                  tfidf_vectors[i,j])
+        result_float8 = AVX.mul(idf_float8s[j/8], tfidf_float8)
+        AVX.to_mem(result_float8, &(tfidf_vectors[i, j]))
+  else :
+    for i in prange(num_questions,
+                    nogil=True, 
+                    chunksize=num_questions/4, 
+                    num_threads=num_threads, 
+                    schedule="static") :
+      for j in range(num_indices) :
+        tfidf_vectors[i, j] *= idf_vector[j]
+  return tfidf_vectors
 
 
 
