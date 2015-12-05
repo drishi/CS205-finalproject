@@ -13,8 +13,6 @@ import numpy as np
 
 import tfidf_cython_serial as tfidf
 
-import mandelbrot
-
 from timer import Timer
 
 def print_t(t, string) :
@@ -66,11 +64,11 @@ def create_tfs() :
   print_t(t, "create_tfs")
   return tfs
 
-def calculate_idf() :
+def calculate_idf(num_locks) :
   global num_keys
   with Timer() as t:
-    locks_ptr = tfidf.preallocate_locks(1)
-    idf = tfidf.calculate_idf(num_keys, locks_ptr)
+    locks_ptr = tfidf.preallocate_locks(num_locks)
+    idf = tfidf.calculate_idf(num_keys, locks_ptr, num_locks)
   print_t(t, "calculate_idf")
   return idf
 

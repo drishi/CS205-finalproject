@@ -140,7 +140,7 @@ cpdef create_tfs() :
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr) :
+cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr, unsigned num_locks) :
   global num_questions, num_words_per_question, idf_vector, word_indices, \
           question_texts
   
@@ -165,9 +165,9 @@ cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr) :
         word_index = dereference(iter_value).second
         if temp_vectors[tid, word_index] == 0 :
           temp_vectors[tid, word_index] += 1
-          acquire(&locks[0])
+          acquire(&locks[word_index%num_locks])
           num_docs_vector[word_index] += 1
-          release(&locks[0])
+          release(&locks[word_index%num_locks])
 
     for j in xrange(num_indices) :
       temp_vectors[tid, j] = 0
