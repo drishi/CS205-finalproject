@@ -3,15 +3,23 @@ cimport numpy as np
 cimport cython
 import numpy
 
-from cython.parallel import prange
+from cython.parallel import prange, threadid
 from cython.operator cimport dereference
 
 from cpython.version cimport PY_MAJOR_VERSION
 
-from libc.stdlib cimport malloc, free
+from libc.stdint cimport uintptr_t
+from libc.stdlib cimport malloc, free, calloc
 from libcpp.string cimport string
 
 from cpython.string cimport PyString_AsString
+
+from omp_defs cimport omp_lock_t, get_N_locks, free_N_locks, acquire, release
+
+def preallocate_locks(num_locks) :
+    cdef omp_lock_t *locks = get_N_locks(num_locks)
+    assert 0 != <uintptr_t> <void *> locks, "could not allocate locks"
+    return <uintptr_t> <void *> locks
 
 cdef unicode _ustring(s):
     if type(s) is unicode:
@@ -54,6 +62,8 @@ cdef:
   unsigned num_threads
   char ***question_texts
   unsigned [:,:] tf_vectors
+  float [:,:] tfidf_vectors
+  float [:] idf_vector
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -105,13 +115,14 @@ cpdef load_questions(questions) :
       question_texts[i][j] = PyString_AsString(question[j])
 
 cpdef init_tfs(unsigned num_indices) :
-  global tf_vectors, question_texts, num_threads, word_indices
+  global tf_vectors, num_threads, word_indices
   tf_vectors = np.zeros([num_questions,num_indices]).astype(np.uint32)
-  print "Values Initialized"
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef create_tfs() :
+  global num_questions, num_threads, num_words_per_question, word_indices, \
+          tf_vectors, question_texts
   cdef :
     unordered_map[string, unsigned].iterator iter_value
     unsigned i, j, word_index
@@ -124,10 +135,68 @@ cpdef create_tfs() :
       iter_value = word_indices.find(string(question_texts[i][j]))
       if word_indices.end() != iter_value :
         word_index = dereference(iter_value).second
-      tf_vectors[i][5] += 1
+        tf_vectors[i][word_index] += 1
   return tf_vectors
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr) :
+  global num_questions, num_words_per_question, idf_vector, word_indices, \
+          question_texts
+  
+  idf_vector = np.log(num_questions) * np.ones(num_indices).astype(np.float32)
 
-cpdef calculate_tfidfs() :
-  global question_texts, 
+  cdef :
+    unsigned [:,:] temp_vectors = np.zeros([num_threads, num_indices]).astype(np.uint32)
+    unsigned i, j, word_index, tid
+    unsigned [:] num_docs_vector = np.zeros(num_indices).astype(np.uint32)
+    omp_lock_t *locks = <omp_lock_t *> <void *> locks_ptr
+
+  for i in prange(num_questions,
+                  nogil=True, 
+                  chunksize=num_questions/8, 
+                  num_threads=num_threads, 
+                  schedule="static") :
+    tid = threadid()
+
+    for j in xrange(num_words_per_question[i]) :
+      iter_value = word_indices.find(string(question_texts[i][j]))
+      if word_indices.end() != iter_value :
+        word_index = dereference(iter_value).second
+        if temp_vectors[tid, word_index] == 0 :
+          temp_vectors[tid, word_index] += 1
+          acquire(&locks[0])
+          num_docs_vector[word_index] += 1
+          release(&locks[0])
+
+    for j in xrange(num_indices) :
+      temp_vectors[tid, j] = 0
+  
+  for j in xrange(num_indices) :
+    idf_vector[j] -= np.log(num_docs_vector[j])
+
+  return idf_vector
+
+cpdef init_tfidfs(unsigned num_indices) :
+  global tfidf_vectors, num_threads, word_indices
+  tfidf_vectors = np.copy(tf_vectors).astype(np.float32)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef calculate_tfidfs(unsigned num_indices) :
+  global tfidf_vectors, idf_vector, tf_vectors
+  cdef:
+    unsigned i, j
+  for i in prange(num_questions,
+                  nogil=True, 
+                  chunksize=num_questions/8, 
+                  num_threads=num_threads, 
+                  schedule="static") :
+    for j in xrange(num_indices) :
+      tfidf_vectors[i, j] *= idf_vector[j]
+  return tfidf_vectors
+
+
+
+
 

@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import os.path
 sys.path.append(os.path.join('', 'TFIDF'))
-sys.path.append(os.path.join('', 'util'))
+sys.path.append(os.path.join('..', 'util'))
 
 import TFIDF_cython as tfidf_c
 
@@ -18,12 +18,14 @@ except NameError:
     question_texts = pickle.load(open('questionTexts_sm.pkl', 'rb'))
 
 # Preprocess for cython code
-tfidf_c.init_globals(4)
+tfidf_c.init_globals(1)
 tfidf_c.load_questions(question_texts)
 tfidf_c.load_indices(word_indices)
 tfidf_c.init_tfs()
-cython_tfs = tfidf_c.create_tfs()
-# tfidf.calculate_tfidfs()
+tfidf_c.create_tfs()
+tfidf_c.calculate_idf()
+tfidf_c.init_tfidfs()
+tfidf_c.calculate_tfidfs()
 # tfidf.calculate_cossim(question_texts[0])
 
 # Verification

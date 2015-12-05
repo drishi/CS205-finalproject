@@ -40,7 +40,7 @@ def load_indices(indices) :
   with Timer() as t :
     word_indices = {}
     for (key, value) in indices :
-      word_indices[key] = value
+      word_indices[key.encode('utf-8', 'ignore')] = value
   print_t(t, "load_indices")
 
 def init_tfs() :
@@ -70,21 +70,29 @@ def calculate_idf() :
     for text in question_texts :
         temp_dict = {}
         for word in text :
+          word = word.encode('utf-8', 'ignore')
           if word in word_indices :
             if word in temp_dict :
               continue
             else :
               temp_dict[word] = True
               num_docs_vector[word_indices[word]] += 1
-    idf_vector = np.log(N / num_docs_vector)
+    idf_vector = np.log(float(N)) - np.log(num_docs_vector)
   print_t(t, "create_idf")
+  return idf_vector
 
 def calculate_tfidfs() :  
-  global tfidf_vectors, tfidf_norms
+  global tfidf_vectors
   with Timer() as t :
     tfidf_vectors = tf_vectors * idf_vector[None, :]
-    tfidf_norms = np.linalg.norm(tfidf_vectors, axis=1)
   print_t(t, "calculate_tfidfs")
+  return tfidf_vectors
+
+def calculate_tfidf_norms() :
+  global tfidf_norms
+  with Timer() as t :
+    tfidf_norms = np.linalg.norm(tfidf_vectors, axis=1)
+  print_t(t, "calculate_tfidf_norms")
 
 def calculate_tfidf(example_question) :
   global word_indices, idf_vector

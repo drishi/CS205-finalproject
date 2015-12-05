@@ -1,6 +1,6 @@
 import sys
 import os.path
-sys.path.append(os.path.join('..', 'util'))
+sys.path.append(os.path.join('', 'util'))
 
 import set_compiler
 set_compiler.install()
@@ -66,25 +66,26 @@ def create_tfs() :
   print_t(t, "create_tfs")
   return tfs
 
-# def get_value_at_key(key) :
-#   return tfidf.get_index(key)
-    
-# def calculate_tfidfs() :
-#   global question_texts, word_indices, tfidf_vectors, tfidf_norms, idf_vector
-#   num_docs_vector = np.zeros(len(word_indices))
-#   N = float(len(question_texts))
-#   for text in question_texts :
-#       temp_dict = {}
-#       for word in text :
-#         if word in word_indices :
-#           if word in temp_dict :
-#             continue
-#           else :
-#             temp_dict[word] = True
-#             num_docs_vector[word_indices[word]] += 1
-#   idf_vector = np.log(N / num_docs_vector)
-#   tfidf_vectors = tf_vectors * idf_vector[None, :]
-#   tfidf_norms = np.linalg.norm(tfidf_vectors, axis=1)
+def calculate_idf() :
+  global num_keys
+  with Timer() as t:
+    locks_ptr = tfidf.preallocate_locks(1)
+    idf = tfidf.calculate_idf(num_keys, locks_ptr)
+  print_t(t, "calculate_idf")
+  return idf
+
+def init_tfidfs() :
+  global num_keys
+  with Timer() as t:
+    tfidfs = tfidf.init_tfidfs(num_keys)
+  print_t(t, "int_tfidfs")
+
+def calculate_tfidfs() :
+  global num_keys
+  with Timer() as t:
+    tfidfs = tfidf.calculate_tfidfs(num_keys)
+  print_t(t, "calculate_tfidfs")
+  return tfidfs
 
 # # def calculate_tfidf(example_question) :
 # #   global word_indices
