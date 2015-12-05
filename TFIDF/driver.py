@@ -31,6 +31,9 @@ if __name__ == '__main__':
 
     with Timer() as t:
         mandelbrot.mandelbrot(in_coords, out_counts, 1024)
+        mandelbrot.xor(np.array[1,2,3,4,5,6,7,8],
+                        np.array[2,3,4,5,6,7,8,1]
+                        )
     seconds = t.interval
 
     print("{} Million Complex FMAs in {} seconds, {} million Complex FMAs / second".format(out_counts.sum() / 1e6, seconds, (out_counts.sum() / seconds) / 1e6))
