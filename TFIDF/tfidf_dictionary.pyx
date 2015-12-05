@@ -1,6 +1,7 @@
 import numpy as np
 cimport numpy as np
 cimport cython
+cimport AVX
 import numpy
 
 from cython.parallel cimport prange

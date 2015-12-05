@@ -8,7 +8,6 @@ set_compiler.install()
 import pyximport
 pyximport.install()
 
-# import tfidf_dictionary as tfidf
 import numpy as np
 
 import tfidf_cython_serial as tfidf
