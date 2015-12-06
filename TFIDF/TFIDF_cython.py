@@ -112,8 +112,8 @@ def calculate_simhashes() :
   global size
   with Timer() as t :
     simhashes = tfidf.calculate_simhashes(size)
-  print_t(t, "calculate_cossim")
-  return result  
+  print_t(t, "calculate_simhashes")
+  return simhashes  
 
 
 # # def calculate_tfidf(example_question) :
