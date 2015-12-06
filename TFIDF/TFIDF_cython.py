@@ -128,17 +128,3 @@ def calculate_distances():
       distances = tfidf.calculate_distances32(size)
   print_t(t, "calculate distances")
   return distances
-
-
-# # def calculate_tfidf(example_question) :
-# #   global word_indices
-# #   tf_vector = np.zeros(len(word_indices))
-# #   for word in example_question :
-# #     if word in word_indices :
-# #       tf_vector[word_indices[word]] += 1
-# #   return tf_vector * idf_vector
-
-# # def calculate_cossim(example_question) :
-# #   global tfidf_vectors, tfidf_norms
-# #   example = calculate_tfidf(example_question)
-# #   return tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)

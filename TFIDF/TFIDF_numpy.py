@@ -105,13 +105,16 @@ def calculate_tfidf(example_question) :
   print_t(t, "calculate_tfidf")
   return tf_vector * idf_vector
 
-def calculate_cossim(example_question) :
-  global tfidf_vectors, tfidf_norms
+def calculate_cossims() :
+  global tfidf_vectors
   with Timer() as t :
-    example = calculate_tfidf(example_question)
-    result = tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)
-  print_t(t, "calculate_cossim")
-  return result
+    norms = np.sum(np.abs(tfidf_vectors)**2,axis=-1)**(1./2)
+    I = norms > 0
+    u_vectors = np.zeros(tfidf_vectors.shape)
+    u_vectors = tfidf_vectors[I] / norms[I][:, None]
+    cossims = u_vectors.dot(u_vectors.T)
+  print_t(t, "calculate_cossims")
+  return cossims
 
 def calculate_simhashes() :
   global word_indices, question_texts, tfidf_vectors, simhashes
@@ -147,8 +150,7 @@ def calculate_distances() :
   global simhashes
   with Timer() as t :
     A = np.array([simhashes] * len(simhashes))
-    B = np.copy(A)
-    distances = numBits64(A ^ B.T)
+    distances = numBits64(A ^ A.T)
   print_t(t, "calculate_distances")
   return distances
 
