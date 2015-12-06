@@ -12,6 +12,8 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free, calloc
 from libcpp.string cimport string
 
+from libc.stdint cimport uint32_t, int64_t 
+
 from cpython.string cimport PyString_AsString
 
 from omp_defs cimport omp_lock_t, get_N_locks, free_N_locks, acquire, release
@@ -206,22 +208,22 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
                                   idf_vector[j+1],
                                   idf_vector[j])
 
-    for i in prange(num_questions,
-                    nogil=True, 
-                    chunksize=num_questions/4, 
-                    num_threads=num_threads, 
-                    schedule="static") :
-      for j in range(0, num_indices, 8) :
-        tfidf_float8 = AVX.make_float8(tfidf_vectors[i,j+7],
-                                  tfidf_vectors[i,j+6],
-                                  tfidf_vectors[i,j+5],
-                                  tfidf_vectors[i,j+4],
-                                  tfidf_vectors[i,j+3],
-                                  tfidf_vectors[i,j+2],
-                                  tfidf_vectors[i,j+1],
-                                  tfidf_vectors[i,j])
-        result_float8 = AVX.mul(idf_float8s[j/8], tfidf_float8)
-        AVX.to_mem(result_float8, &(tfidf_vectors[i, j]))
+  for i in prange(num_questions,
+                  nogil=True, 
+                  chunksize=num_questions/4, 
+                  num_threads=num_threads, 
+                  schedule="static") :
+    for j in range(0, num_indices, 8) :
+      tfidf_float8 = AVX.make_float8(tfidf_vectors[i,j+7],
+                                tfidf_vectors[i,j+6],
+                                tfidf_vectors[i,j+5],
+                                tfidf_vectors[i,j+4],
+                                tfidf_vectors[i,j+3],
+                                tfidf_vectors[i,j+2],
+                                tfidf_vectors[i,j+1],
+                                tfidf_vectors[i,j])
+      result_float8 = AVX.mul(idf_float8s[j/8], tfidf_float8)
+      AVX.to_mem(result_float8, &(tfidf_vectors[i, j]))
   else :
     for i in prange(num_questions,
                     nogil=True, 
@@ -231,6 +233,97 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
       for j in range(num_indices) :
         tfidf_vectors[i, j] *= idf_vector[j]
   return tfidf_vectors
+
+# might need boundscheck and wraparound false
+cpdef calculate_simhashes(unsigned size):
+  global word_indices, question_texts, simhashes, num_threads, tfidf_vectors
+  cdef:
+    unsigned i, j, counter
+    float weight
+    char* word
+    uint32_t wordhash32, simhash32
+    int64_t wordhash64, simhash64
+    float [:] W
+
+  if (size == 64):
+    simhashes = <int64_t*>malloc(num_questions * sizeof(int64_t))
+  elif (size == 32):
+    simhashes = <uint32_t*>malloc(num_questions * sizeof(uint32_t))
+  # default, right now 64
+  else:
+    simhashes = <int64_t*>malloc(num_questions * sizeof(int64_t))
+  for u in prange(len(question_texts),
+                  nogil=True,
+                  chunksize=1,
+                  num_threads=num_threads,
+                  schedule='static'):
+    W = np.zeros(size)
+    for i in range(len(question_texts[u])):
+      word = question_texts[u][i]
+      iter_value = word_indices.find(string(question_texts[i][j]))
+      if word_indices.end() != iter_value :
+        word_index = dereference(iter_value).second
+        weight = tfidf_vectors[u][]
+        counter = size-1
+        if (size == 32):
+          wordhash32 = hash32(string(word))
+          while wordhash32 > 0:
+            bit = wordhash32 % 2
+            if bit:
+              W[counter] += weight
+            else:
+              W[counter] -= weight
+            wordhash32 = wordhash32 >> 1
+            counter -= 1
+        # if size if 64
+        else:
+          wordhash64 = hash64(string(word))
+          while wordhash64 > 0:
+            bit = wordhash64 % 2
+            if bit:
+              W[counter] += weight
+            else:
+              W[counter] -= weight
+            wordhash64 = wordhash64 >> 1
+            counter -= 1
+    if (size == 32):
+      simhash32 = 0
+      for i in range(len(W)):
+        if W[i] >= 0:
+          simhash32 += 1
+        if i < len(W)-1:
+          simhash32 = simhash32 << 1
+      simhashes[u] = simhash32
+    # if size is 64
+    else:
+      simhash64 = 0
+      for i in range(len(W)):
+        if W[i] >= 0:
+          simhash64 += 1
+        if i < len(W)-1:
+          simhash64 = simhash64 << 1
+        simhashes[u] = simhash64
+
+      
+cdef hash64(string str1):
+  cdef:
+    int64_t result 
+    int c, i
+  result = 5381
+  while (c = str1[i])
+    i += 1
+    result = ((result << 5) + result) + c
+  return result
+  
+cdef hash32(string str1):
+  cdef:
+    uint32_t result 
+    int c, i
+  result = 5381
+  while (c = str1[i])
+    i += 1
+    result = ((result << 5) + result) + c
+  return result
 
 
 
