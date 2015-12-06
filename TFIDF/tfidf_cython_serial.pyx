@@ -20,6 +20,9 @@ from omp_defs cimport omp_lock_t, get_N_locks, free_N_locks, acquire, release
 
 cimport AVX_cpp as AVX
 
+cimport xxhash
+
+
 def preallocate_locks(num_locks) :
     cdef omp_lock_t *locks = get_N_locks(num_locks)
     assert 0 != <uintptr_t> <void *> locks, "could not allocate locks"
