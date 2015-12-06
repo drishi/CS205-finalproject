@@ -111,3 +111,33 @@ def calculate_cossim(example_question) :
     result = tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)
   print_t(t, "calculate_cossim")
   return result
+
+
+def calculate_simhashes() :
+  global word_indices, question_texts, tfidf_vectors
+  with Timer() as t :
+    simhashes = []
+    for u in range(len(question_texts)):
+      W = np.zeros(64)
+      for i in range(len(question_texts[u])):
+        word = question_texts[u][i]
+        if word not in word_indices :
+          continue
+        wordhash = xxhash.xxh64(word).intdigest()
+        counter = 63
+        while wordhash > 0:
+            bit = wordhash % 2
+            if bit:
+                W[counter] += tfidf_vectors[u][word_indices[word]]
+            else:
+                W[counter] -= tfidf_vectors[u][word_indices[word]]
+            wordhash = wordhash >> 1
+            counter -= 1
+      simhash = 0
+      for i in range(len(W)):
+          if W[i] >= 0:
+              simhash += 1
+          if i < len(W)-1:
+              simhash = simhash << 1
+      simhashes.append(simhash)
+  print_t(t, "calculate_simhashes")

@@ -17,15 +17,17 @@ from timer import Timer
 def print_t(t, string) :
   print "Time for " + string + ": " + str(t.interval)
 
-def init_globals(N, use_AVX = False) :
+def init_globals(N, use_AVX = False, lock_type = "coarse", hash_size = 64) :
   '''
   Load questions into memory
   '''
-  global AVX_f
+  global AVX_f, size, lock_t
   with Timer() as t :
     tfidf.init_globals(N)
   print_t(t, "Initialization")
   AVX_f = use_AVX
+  lock_t = lock_type
+  size = hash_size
 
 def load_questions(questions) :
   '''
@@ -105,6 +107,13 @@ def calculate_cossim(example_question) :
     result = tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)
   print_t(t, "calculate_cossim")
   return result
+
+def calculate_simhashes() :
+  global size
+  with Timer() as t :
+    simhashes = tfidf.calculate_simhashes(size)
+  print_t(t, "calculate_cossim")
+  return result  
 
 
 # # def calculate_tfidf(example_question) :

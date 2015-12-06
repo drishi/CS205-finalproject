@@ -263,7 +263,7 @@ cpdef calculate_simhashes(unsigned size):
       iter_value = word_indices.find(string(question_texts[i][j]))
       if word_indices.end() != iter_value :
         word_index = dereference(iter_value).second
-        weight = tfidf_vectors[u][]
+        weight = tfidf_vectors[u][word_index]
         counter = size-1
         if (size == 32):
           wordhash32 = hash32(string(word))
@@ -303,14 +303,14 @@ cpdef calculate_simhashes(unsigned size):
         if i < len(W)-1:
           simhash64 = simhash64 << 1
         simhashes[u] = simhash64
+  return simhashes
 
-      
 cdef hash64(string str1):
   cdef:
     int64_t result 
     int c, i
   result = 5381
-  while (c = str1[i])
+  while c == str1[i] :
     i += 1
     result = ((result << 5) + result) + c
   return result
@@ -320,7 +320,7 @@ cdef hash32(string str1):
     uint32_t result 
     int c, i
   result = 5381
-  while (c = str1[i])
+  while c == str1[i] :
     i += 1
     result = ((result << 5) + result) + c
   return result
