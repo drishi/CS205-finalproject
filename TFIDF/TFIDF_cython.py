@@ -88,8 +88,24 @@ def calculate_tfidfs() :
   print_t(t, "calculate_tfidfs")
   return tfidfs
 
-def example_sqrt(values) :
-  return tfidf.example_sqrt_8(values.astype(np.float32))
+def calculate_tfidf(example_question) :
+  global word_indices, idf_vector
+  with Timer() as t :
+    tf_vector = np.zeros(len(word_indices))
+    for word in example_question :
+      if word in word_indices :
+        tf_vector[word_indices[word]] += 1
+  print_t(t, "calculate_tfidf")
+  return tf_vector * idf_vector
+
+def calculate_cossim(example_question) :
+  global tfidf_vectors, tfidf_norms
+  with Timer() as t :
+    example = calculate_tfidf(example_question)
+    result = tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)
+  print_t(t, "calculate_cossim")
+  return result
+
 
 # # def calculate_tfidf(example_question) :
 # #   global word_indices

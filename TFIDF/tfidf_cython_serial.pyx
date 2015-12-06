@@ -197,14 +197,14 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
     assert(num_indices % 8 == 0)
     idf_float8s = <AVX.float8 *>malloc(num_indices / 8 * sizeof(AVX.float8))
     for j in range(0, num_indices, 8) :
-        idf_float8s[j/8] = AVX.make_float8(tfidf_vectors[i,j+7],
-                                  tfidf_vectors[i,j+6],
-                                  tfidf_vectors[i,j+5],
-                                  tfidf_vectors[i,j+4],
-                                  tfidf_vectors[i,j+3],
-                                  tfidf_vectors[i,j+2],
-                                  tfidf_vectors[i,j+1],
-                                  tfidf_vectors[i,j])
+        idf_float8s[j/8] = AVX.make_float8(idf_vector[j+7],
+                                  idf_vector[j+6],
+                                  idf_vector[j+5],
+                                  idf_vector[j+4],
+                                  idf_vector[j+3],
+                                  idf_vector[j+2],
+                                  idf_vector[j+1],
+                                  idf_vector[j])
 
     for i in prange(num_questions,
                     nogil=True, 

@@ -2,8 +2,10 @@ import cPickle as pickle
 import numpy as np
 import sys
 import os.path
+sys.path.append(os.path.join('..', 'TFIDF'))
 sys.path.append(os.path.join('', 'TFIDF'))
 sys.path.append(os.path.join('..', 'util'))
+sys.path.append(os.path.join('', 'util'))
 
 import TFIDF_cython as tfidf_c
 
