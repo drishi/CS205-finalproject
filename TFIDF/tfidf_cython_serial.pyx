@@ -83,7 +83,9 @@ cdef:
   float [:,:] tfidf_vectors
   float [:] idf_vector
   uint32_t [:] simhashes32
-  uint64_t [:] simhashes64 
+  uint64_t [:] simhashes64
+  unsigned [:, :] distances64
+  unsigned [:, :] distances32 
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -348,3 +350,43 @@ cdef uint64_t hash64(string str1) nogil:
   
 cdef uint32_t hash32(string str1) nogil:
   return XXH32(<const void*> str1.c_str(), str1.length(), rand())
+
+cpdef calculate_distances64(unsigned size):
+  global num_questions, simhashes64, num_threads, distances64
+  cdef:
+    unsigned i, j
+
+  distances64 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+
+  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+    for j in xrange(num_questions):
+      distances64[i, j] = numBits64(simhashes64[i] ^ simhashes64[j])
+  return distances64
+
+#The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
+
+cdef unsigned numBits64(uint64_t i) nogil:
+
+  i = i - ((i >> <uint64_t>1) & <uint64_t> 0x5555555555555555)
+  i = (i & <uint64_t> 0x3333333333333333) + ((i >> <uint64_t> 2) & <uint64_t> 0x3333333333333333)
+  i = ((i + (i >> <uint64_t> 4)) & <uint64_t> 0x0F0F0F0F0F0F0F0F)
+  return (i*(<uint64_t> 0x0101010101010101))>> <uint64_t> 56
+
+
+cpdef calculate_distances32(unsigned size):
+  global num_questions, simhashes32, num_threads, distances32
+  cdef:
+    unsigned i, j
+
+  distances32 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+
+  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+    for j in xrange(num_questions):
+      distances32[i, j] = numBits32(simhashes32[i] ^ simhashes32[j])
+  return distances32 
+
+cdef unsigned numBits32(uint64_t i) nogil:
+    i = i - ((i >> 1) & 0x55555555)
+    i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
+    i = ((i + (i >> 4)) & 0x0F0F0F0F)
+    return (i*(0x01010101))>>24

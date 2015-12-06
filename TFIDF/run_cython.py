@@ -29,6 +29,8 @@ tfidf_c.calculate_idf(1)
 tfidf_c.init_tfidfs()
 tfidf_c.calculate_tfidfs()
 tfidf_c.calculate_simhashes()
+tfidf_c.calculate_distances()
+
 # tfidf.calculate_cossim(question_texts[0])
 
 # Verification
