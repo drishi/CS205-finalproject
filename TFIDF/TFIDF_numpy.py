@@ -111,7 +111,7 @@ def calculate_cossims() :
     norms = np.sum(np.abs(tfidf_vectors)**2,axis=-1)**(1./2)
     I = norms > 0
     u_vectors = np.zeros(tfidf_vectors.shape)
-    u_vectors = tfidf_vectors[I] / norms[I][:, None]
+    u_vectors[I] = tfidf_vectors[I] / norms[I][:, None]
     cossims = u_vectors.dot(u_vectors.T)
   print_t(t, "calculate_cossims")
   return cossims
