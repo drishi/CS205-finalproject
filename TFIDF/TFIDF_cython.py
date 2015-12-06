@@ -111,7 +111,11 @@ def calculate_cossim(example_question) :
 def calculate_simhashes() :
   global size
   with Timer() as t :
-    simhashes = tfidf.calculate_simhashes(size)
+    if size == 64:
+      simhashes = tfidf.calculate_simhashes64(size)
+    # if size is 32
+    else:
+      simhashes = tfidf.calculate_simhashes32(size)
   print_t(t, "calculate_simhashes")
   return simhashes  
 
