@@ -115,6 +115,16 @@ def calculate_simhashes() :
   print_t(t, "calculate_simhashes")
   return simhashes  
 
+def calculate_distances():
+  global size, simhashes
+  with Timer() as t:
+    if size == 64:
+      distances = tfidf.calculate_distances64(size)
+    else:
+      distances = tfidf.calculate_distances32(size)
+  print_t(t, "calculate distances")
+  return distances
+
 
 # # def calculate_tfidf(example_question) :
 # #   global word_indices

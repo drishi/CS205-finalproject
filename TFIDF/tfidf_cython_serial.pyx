@@ -70,7 +70,9 @@ cdef:
   float [:,:] tfidf_vectors
   float [:] idf_vector
   uint32_t [:] simhashes32
-  uint64_t [:] simhashes64 
+  uint64_t [:] simhashes64
+  unsigned [:, :] distances64
+  unsigned [:, :] distances32 
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -237,7 +239,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
   return tfidf_vectors
 
 # might need boundscheck and wraparound false
-cpdef calculate_simhashes(unsigned size):
+cpdef calculate_simhashes64(unsigned size):
   global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
         tfidf_vectors, num_words_per_question
   cdef:
@@ -294,7 +296,57 @@ cdef uint64_t hash64(string str1) nogil:
     i += 1
     result = ((result << 5) + result) + c
   return result
-  
+
+cpdef calculate_distances64(unsigned size):
+  print ("blaaaaa")
+  global num_questions, simhashes64, num_threads, distances64
+  cdef:
+    unsigned i, j
+
+  distances64 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+
+  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+    for j in xrange(num_questions):
+      distances64[i, j] = numBits64(simhashes64[i] ^ simhashes64[j])
+  return distances64
+
+#The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
+
+cdef unsigned numBits64(uint64_t i) nogil:
+  cdef:
+    uint64_t one = 1
+    uint64_t fives = 0x5555555555555555
+    uint64_t threes = 0x3333333333333333
+    uint64_t two = 2
+    uint64_t four = 4
+    uint64_t fs = 0x0F0F0F0F0F0F0F0F
+    uint64_t zerones = 0x0101010101010101
+    uint64_t fiftysix = 56
+
+  i = i - ((i >> one) & fives)
+  i = (i & threes) + ((i >> two) & threes)
+  i = ((i + (i >> four)) & fs)
+  return (i*(zerones))>>fiftysix
+
+
+cpdef calculate_distances32(unsigned size):
+  global num_questions, simhashes32, num_threads, distances32
+  cdef:
+    unsigned i, j
+
+  distances32 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+
+  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+    for j in xrange(num_questions):
+      distances32[i, j] = numBits32(simhashes32[i] ^ simhashes32[j])
+  return distances32 
+
+cdef unsigned numBits32(uint64_t i) nogil:
+    i = i - ((i >> 1) & 0x55555555)
+    i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
+    i = ((i + (i >> 4)) & 0x0F0F0F0F)
+    return (i*(0x01010101))>>24
+
 # cdef hash32(string str1):
 #   cdef:
 #     uint32_t result 

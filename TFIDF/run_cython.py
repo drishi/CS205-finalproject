@@ -20,7 +20,7 @@ except NameError:
     question_texts = pickle.load(open('questionTexts_md.pkl', 'rb'))
 
 # Preprocess for cython code
-tfidf_c.init_globals(1, True, "coarse", 64)
+tfidf_c.init_globals(1, True, "coarse", 32)
 tfidf_c.load_questions(question_texts)
 tfidf_c.load_indices(word_indices)
 tfidf_c.init_tfs()
@@ -29,6 +29,8 @@ tfidf_c.calculate_idf(1)
 tfidf_c.init_tfidfs()
 tfidf_c.calculate_tfidfs()
 tfidf_c.calculate_simhashes()
+tfidf_c.calculate_distances()
+
 # tfidf.calculate_cossim(question_texts[0])
 
 # Verification
