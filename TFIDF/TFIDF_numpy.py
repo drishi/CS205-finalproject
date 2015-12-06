@@ -146,7 +146,7 @@ def calculate_simhashes() :
 def calculate_distances() :
   global simhashes
   with Timer() as t :
-    A = np.array([serial_simhashes] * len(serial_simhashes))
+    A = np.array([simhashes] * len(simhashes))
     B = np.copy(A)
     distances = numBits64(A ^ B.T)
   print_t(t, "calculate_distances")
