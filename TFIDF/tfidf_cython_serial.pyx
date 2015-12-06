@@ -12,7 +12,7 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free, calloc
 from libcpp.string cimport string
 
-from libc.stdint cimport uint32_t, int64_t 
+from libc.stdint cimport uint32_t, uint64_t 
 
 from cpython.string cimport PyString_AsString
 
@@ -68,8 +68,8 @@ cdef:
   unsigned [:,:] tf_vectors
   float [:,:] tfidf_vectors
   float [:] idf_vector
-  uint32_t* simhashes32
-  int64_t* simhashes64 
+  uint32_t [:] simhashes32
+  uint64_t [:] simhashes64 
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -240,20 +240,18 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
 cpdef calculate_simhashes(unsigned size):
   global word_indices, question_texts, simhashes32, simhashes64, num_threads, tfidf_vectors
   cdef:
-    unsigned i, j, counter
+    unsigned i, j, counter, word_index, bit
     float weight
     char* word
     uint32_t wordhash32, simhash32
-    int64_t wordhash64, simhash64
+    uint64_t wordhash64, simhash64
     float [:] W
 
-  if (size == 64):
-    simhashes64 = <int64_t*>malloc(num_questions * sizeof(int64_t))
-  elif (size == 32):
-    simhashes32 = <uint32_t*>malloc(num_questions * sizeof(uint32_t))
+  if (size == 32):
+    simhashes32 = np.zeros(num_questions).astype(np.uint32)
   # default, right now 64
   else:
-    simhashes64 = <int64_t*>malloc(num_questions * sizeof(int64_t))
+    simhashes64 = np.zeros(num_questions).astype(np.uint64)
   for u in prange(num_questions,
                   nogil=True,
                   chunksize=1,
@@ -287,7 +285,7 @@ cpdef calculate_simhashes(unsigned size):
             else:
               W[counter] -= weight
             wordhash64 = wordhash64 >> 1
-            counter -= 1
+            counter = counter - 1
     if (size == 32):
       simhash32 = 0
       for i in range(size):
@@ -295,7 +293,7 @@ cpdef calculate_simhashes(unsigned size):
           simhash32 += 1
         if i < size-1:
           simhash32 = simhash32 << 1
-      simhashes[u] = simhash32
+      simhashes32[u] = simhash32
     # if size is 64
     else:
       simhash64 = 0
@@ -304,8 +302,8 @@ cpdef calculate_simhashes(unsigned size):
           simhash64 += 1
         if i < size-1:
           simhash64 = simhash64 << 1
-        simhashes[u] = simhash64
-  return simhashes
+        simhashes64[u] = simhash64
+
 
 cdef hash64(string str1):
   cdef:
