@@ -25,13 +25,11 @@ cdef extern from "xxhash.c" nogil:
     unsigned XXH32 (const void*, size_t, unsigned)
     unsigned long long XXH64 (const void*, size_t, unsigned long long)
 
-# cdef extern from "<string>" namespace "std" nogil:
-#   cdef cppclass string :
-#     string()
-#     string(const char* s)
-#     size_t length()
-#     const char* c_str()
-#     char& operator[] (size_t)
+cpdef uint64_t hash64(string str1) nogil:
+  return XXH64(<const void*> str1.c_str(), str1.length(), 0)
+  
+cpdef uint32_t hash32(string str1) nogil:
+  return XXH32(<const void*> str1.c_str(), str1.length(), 0)    
 
 def preallocate_locks(num_locks) :
     cdef omp_lock_t *locks = get_N_locks(num_locks)
@@ -254,7 +252,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef calculate_simhashes64(unsigned size):
-  global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
+  global word_indices, question_texts, simhashes64, num_threads, \
         tfidf_vectors, num_words_per_question
   cdef:
     unsigned i, u, counter, word_index, bit, tid
@@ -296,6 +294,10 @@ cpdef calculate_simhashes64(unsigned size):
         simhash64 = simhash64 + 1
 
     simhashes64[u] = simhash64
+
+    for i in xrange(size) :
+      W[tid, i] = 0      
+
   return simhashes64
 
 @cython.boundscheck(False)
@@ -343,13 +345,9 @@ cpdef calculate_simhashes32(unsigned size):
         simhash32 = simhash32 + 1
 
     simhashes32[u] = simhash32
+    for i in xrange(size) :
+      W[tid, i] = 0
   return simhashes32
-
-cdef uint64_t hash64(string str1) nogil:
-  return XXH64(<const void*> str1.c_str(), str1.length(), rand())
-  
-cdef uint32_t hash32(string str1) nogil:
-  return XXH32(<const void*> str1.c_str(), str1.length(), rand())
 
 cpdef calculate_distances64(unsigned size):
   global num_questions, simhashes64, num_threads, distances64
@@ -366,7 +364,6 @@ cpdef calculate_distances64(unsigned size):
 #The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
 
 cdef unsigned numBits64(uint64_t i) nogil:
-
   i = i - ((i >> <uint64_t>1) & <uint64_t> 0x5555555555555555)
   i = (i & <uint64_t> 0x3333333333333333) + ((i >> <uint64_t> 2) & <uint64_t> 0x3333333333333333)
   i = ((i + (i >> <uint64_t> 4)) & <uint64_t> 0x0F0F0F0F0F0F0F0F)

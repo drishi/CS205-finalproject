@@ -141,3 +141,4 @@ def calculate_simhashes() :
               simhash = simhash << 1
       simhashes.append(simhash)
   print_t(t, "calculate_simhashes")
+  return simhashes
