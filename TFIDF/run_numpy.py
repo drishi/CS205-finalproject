@@ -17,12 +17,12 @@ except NameError:
 try :
     word_indices
 except NameError:
-    word_indices = pickle.load(open('wordIndices_md.pkl', 'rb'))
+    word_indices = pickle.load(open('wordIndices_sm.pkl', 'rb'))
 
 try :
     question_texts
 except NameError:
-    question_texts = pickle.load(open('questionTexts_smd.pkl', 'rb'))
+    question_texts = pickle.load(open('questionTexts_sm.pkl', 'rb'))
     
 tfidf.init_globals()
 tfidf.load_questions(question_texts)
@@ -32,3 +32,5 @@ serial_tfs = tfidf.create_tfs()
 serial_idf = tfidf.calculate_idf()
 serial_tfidfs = tfidf.calculate_tfidfs()
 tfidf.calculate_tfidf_norms()
+tfidf.calculate_cossim(question_texts[100])
+simhashes = tfidf.calculate_simhashes()

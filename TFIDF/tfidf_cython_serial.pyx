@@ -59,6 +59,7 @@ cdef extern from "<unordered_map>" namespace "std" nogil:
         size_t count(K)
         T& operator[](K)
         T& at(const K)
+        
 cdef:
   unordered_map[string, unsigned] *word_indices
   unsigned num_questions

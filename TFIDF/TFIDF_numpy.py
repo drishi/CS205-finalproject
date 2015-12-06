@@ -2,11 +2,12 @@
 Numpy serial implemnation of TFIDF
 '''
 import numpy as np
-
 import sys
 import os.path
 sys.path.append(os.path.join('..', 'util'))
 from timer import Timer
+
+import xxhash
 
 def print_t(t, string) :
   print "Time for " + string + ": " + str(t.interval)
@@ -111,7 +112,6 @@ def calculate_cossim(example_question) :
     result = tfidf_vectors.dot(example) / (np.linalg.norm(example) * tfidf_norms)
   print_t(t, "calculate_cossim")
   return result
-
 
 def calculate_simhashes() :
   global word_indices, question_texts, tfidf_vectors
