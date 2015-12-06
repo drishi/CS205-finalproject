@@ -240,7 +240,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
   return tfidf_vectors
 
 # might need boundscheck and wraparound false
-cpdef calculate_simhashes(unsigned size):
+cpdef calculate_simhashes64(unsigned size):
   global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
         tfidf_vectors, num_words_per_question
   cdef:
@@ -286,6 +286,52 @@ cpdef calculate_simhashes(unsigned size):
   return simhashes64
 
 
+# might need boundscheck and wraparound false
+cpdef calculate_simhashes32(unsigned size):
+  global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
+        tfidf_vectors, num_words_per_question
+  cdef:
+    unsigned i, u, counter, word_index, bit, tid
+    float weight
+    string word
+    uint32_t wordhash32, simhash32
+    float [:,:] W = np.zeros([num_threads, size]).astype(np.float32)
+
+  simhashes32 = np.zeros(num_questions).astype(np.uint32)
+  for u in prange(num_questions,
+                  nogil=True,
+                  chunksize=1,
+                  num_threads=num_threads,
+                  schedule='static'):
+    tid = threadid()
+
+    for i in xrange(num_words_per_question[u]):
+      word = string(question_texts[u][i])
+      iter_value = word_indices.find(word)
+
+      if word_indices.end() != iter_value :
+        word_index = dereference(iter_value).second
+        weight = tfidf_vectors[u, word_index]
+        counter = size-1
+        wordhash32 = hash32(word)
+        while wordhash32 > 0:
+          bit = wordhash32 % 2
+          if bit :
+            W[tid, counter] += weight
+          else :
+            W[tid, counter] -= weight
+          wordhash32 = wordhash32 >> 1
+          counter = counter - 1
+
+    simhash32 = 0
+    for i in xrange(size):
+      simhash32 = simhash32 << 1
+      if W[tid, i] >= 0:
+        simhash32 = simhash32 + 1
+
+    simhashes32[u] = simhash32
+  return simhashes32
+
 cdef uint64_t hash64(string str1) nogil:
   cdef:
     uint64_t result 
@@ -298,12 +344,14 @@ cdef uint64_t hash64(string str1) nogil:
     result = ((result << 5) + result) + c
   return result
   
-# cdef hash32(string str1):
-#   cdef:
-#     uint32_t result 
-#     int c, i
-#   result = 5381
-#   while c == str1[i] :
-#     i += 1
-#     result = ((result << 5) + result) + c
-#   return result
+cdef uint32_t hash32(string str1) nogil:
+  cdef:
+    uint32_t result 
+    unsigned c
+    unsigned i = 0
+  result = 5381
+  while str1[i] != '\0':
+    c = <unsigned>str1[i]
+    i += 1
+    result = ((result << 5) + result) + c
+  return result
