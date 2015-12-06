@@ -1,10 +1,12 @@
 # Cython Definition file for AVX_cpp.h
 # Author: George Lok
-
 cdef extern from "AVX_cpp.h" nogil:
     ctypedef struct float8:
         pass
 
+    ctypedef struct int8:
+        pass
+        
     # Create a vector of 8 floats
     #     from one value
     float8 float_to_float8(float)

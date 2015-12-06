@@ -5,18 +5,18 @@
 extern "C" {
   #include <math.h>
 
-  #ifdef __AVX__
+  // #ifdef __AVX__
   #  include <immintrin.h>
-  #else
-  #  include "avxintrin-emu.h"
-  #endif
+  // #else
+  // #  include "avxintrin-emu.h"
+  // #endif
 
-  #ifdef __FMA__
+  // #ifdef __FMA__
   #  include <fmaintrin.h>
-  #else
-  #  define _mm256_fmadd_ps(a, b, c) _mm256_add_ps(_mm256_mul_ps((a), (b)), (c))
-  #  define _mm256_fmsub_ps(a, b, c) _mm256_sub_ps(_mm256_mul_ps((a), (b)), (c))
-  #endif
+  // #else
+  // #  define _mm256_fmadd_ps(a, b, c) _mm256_add_ps(_mm256_mul_ps((a), (b)), (c))
+  // #  define _mm256_fmsub_ps(a, b, c) _mm256_sub_ps(_mm256_mul_ps((a), (b)), (c))
+  // #endif
 }
 
 //Float
