@@ -1,4 +1,9 @@
 /*
+Modifed 12/6/2015
+Author: George Lok
+Declared simple hash functions as static in order for
+easy compilation via cython
+
 xxHash - Fast Hash algorithm
 Copyright (C) 2012-2015, Yann Collet
 
@@ -362,7 +367,7 @@ FORCE_INLINE U32 XXH32_endian_align(const void* input, size_t len, U32 seed, XXH
 }
 
 
-unsigned int XXH32 (const void* input, size_t len, unsigned int seed)
+static unsigned int XXH32 (const void* input, size_t len, unsigned int seed)
 {
 #if 0
     /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
@@ -502,7 +507,7 @@ FORCE_INLINE U64 XXH64_endian_align(const void* input, size_t len, U64 seed, XXH
 }
 
 
-unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed)
+static unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed)
 {
 #if 0
     /* Simple version, good for code maintenance, but unfortunately slow for small inputs */

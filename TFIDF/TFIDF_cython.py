@@ -1,6 +1,6 @@
 import sys
 import os.path
-sys.path.append(os.path.join('', 'util'))
+sys.path.append(os.path.join('..', 'util'))
 
 import set_compiler
 set_compiler.install()

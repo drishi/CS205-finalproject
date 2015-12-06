@@ -1,4 +1,9 @@
 /*
+   Modifed 12/6/2015
+   Author: George Lok
+   Declared simple hash functions as static in order for
+   easy compilation via cython
+   
    xxHash - Extremely Fast Hash algorithm
    Header File
    Copyright (C) 2012-2015, Yann Collet.
@@ -116,8 +121,8 @@ They will be automatically translated by this header.
 *  Simple Hash Functions
 *****************************/
 
-unsigned int       XXH32 (const void* input, size_t length, unsigned seed);
-unsigned long long XXH64 (const void* input, size_t length, unsigned long long seed);
+static unsigned int       XXH32 (const void* input, size_t length, unsigned seed);
+static unsigned long long XXH64 (const void* input, size_t length, unsigned long long seed);
 
 /*
 XXH32() :
