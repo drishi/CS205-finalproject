@@ -345,10 +345,9 @@ cdef uint64_t hash64(string str1) nogil:
     i += 1
     result = ((result << 5) + result) + c
   return result
-<<<<<<< HEAD
+
 
 cpdef calculate_distances64(unsigned size):
-  print ("blaaaaa")
   global num_questions, simhashes64, num_threads, distances64
   cdef:
     unsigned i, j
@@ -363,20 +362,11 @@ cpdef calculate_distances64(unsigned size):
 #The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
 
 cdef unsigned numBits64(uint64_t i) nogil:
-  cdef:
-    uint64_t one = 1
-    uint64_t fives = 0x5555555555555555
-    uint64_t threes = 0x3333333333333333
-    uint64_t two = 2
-    uint64_t four = 4
-    uint64_t fs = 0x0F0F0F0F0F0F0F0F
-    uint64_t zerones = 0x0101010101010101
-    uint64_t fiftysix = 56
 
-  i = i - ((i >> one) & fives)
-  i = (i & threes) + ((i >> two) & threes)
-  i = ((i + (i >> four)) & fs)
-  return (i*(zerones))>>fiftysix
+  i = i - ((i >> <uint64_t>1) & <uint64_t> 0x5555555555555555)
+  i = (i & <uint64_t> 0x3333333333333333) + ((i >> <uint64_t> 2) & <uint64_t> 0x3333333333333333)
+  i = ((i + (i >> <uint64_t> 4)) & <uint64_t> 0x0F0F0F0F0F0F0F0F)
+  return (i*(<uint64_t> 0x0101010101010101))>> <uint64_t> 56
 
 
 cpdef calculate_distances32(unsigned size):
