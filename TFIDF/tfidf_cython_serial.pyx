@@ -9,7 +9,7 @@ from cython.operator cimport dereference
 from cpython.version cimport PY_MAJOR_VERSION
 
 from libc.stdint cimport uintptr_t
-from libc.stdlib cimport malloc, free, calloc
+from libc.stdlib cimport malloc, free, calloc, rand
 from libcpp.string cimport string
 
 from libc.stdint cimport uint32_t, uint64_t 
@@ -20,8 +20,18 @@ from omp_defs cimport omp_lock_t, get_N_locks, free_N_locks, acquire, release
 
 cimport AVX_cpp as AVX
 
-cimport xxhash
+# Hacky. Should move into pxd file.
+cdef extern from "xxhash.c" nogil:
+    unsigned XXH32 (const void*, size_t, unsigned)
+    unsigned long long XXH64 (const void*, size_t, unsigned long long)
 
+# cdef extern from "<string>" namespace "std" nogil:
+#   cdef cppclass string :
+#     string()
+#     string(const char* s)
+#     size_t length()
+#     const char* c_str()
+#     char& operator[] (size_t)
 
 def preallocate_locks(num_locks) :
     cdef omp_lock_t *locks = get_N_locks(num_locks)
@@ -203,7 +213,6 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
     unsigned i, j
 
   if AVX_f :
-    print "Using AVX"
     assert(num_indices % 8 == 0)
     idf_float8s = <AVX.float8 *>malloc(num_indices / 8 * sizeof(AVX.float8))
     for j in range(0, num_indices, 8) :
@@ -241,7 +250,9 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
         tfidf_vectors[i, j] *= idf_vector[j]
   return tfidf_vectors
 
-# might need boundscheck and wraparound false
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef calculate_simhashes64(unsigned size):
   global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
         tfidf_vectors, num_words_per_question
@@ -287,8 +298,8 @@ cpdef calculate_simhashes64(unsigned size):
     simhashes64[u] = simhash64
   return simhashes64
 
-
-# might need boundscheck and wraparound false
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef calculate_simhashes32(unsigned size):
   global word_indices, question_texts, simhashes32, simhashes64, num_threads, \
         tfidf_vectors, num_words_per_question
@@ -335,17 +346,10 @@ cpdef calculate_simhashes32(unsigned size):
   return simhashes32
 
 cdef uint64_t hash64(string str1) nogil:
-  cdef:
-    uint64_t result 
-    unsigned c
-    unsigned i = 0
-  result = 5381
-  while str1[i] != '\0':
-    c = <unsigned>str1[i]
-    i += 1
-    result = ((result << 5) + result) + c
-  return result
-
+  return XXH64(<const void*> str1.c_str(), str1.length(), rand())
+  
+cdef uint32_t hash32(string str1) nogil:
+  return XXH32(<const void*> str1.c_str(), str1.length(), rand())
 
 cpdef calculate_distances64(unsigned size):
   global num_questions, simhashes64, num_threads, distances64
@@ -386,25 +390,3 @@ cdef unsigned numBits32(uint64_t i) nogil:
     i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
     i = ((i + (i >> 4)) & 0x0F0F0F0F)
     return (i*(0x01010101))>>24
-
-# cdef hash32(string str1):
-#   cdef:
-#     uint32_t result 
-#     int c, i
-#   result = 5381
-#   while c == str1[i] :
-#     i += 1
-#     result = ((result << 5) + result) + c
-#   return result
-  
-cdef uint32_t hash32(string str1) nogil:
-  cdef:
-    uint32_t result 
-    unsigned c
-    unsigned i = 0
-  result = 5381
-  while str1[i] != '\0':
-    c = <unsigned>str1[i]
-    i += 1
-    result = ((result << 5) + result) + c
-  return result

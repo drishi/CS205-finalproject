@@ -12,12 +12,12 @@ import TFIDF_cython as tfidf_c
 try :
     word_indices
 except NameError:
-    word_indices = pickle.load(open('wordIndices_md.pkl', 'rb'))
+    word_indices = pickle.load(open('wordIndices_sm.pkl', 'rb'))
 
 try :
     question_texts
 except NameError:
-    question_texts = pickle.load(open('questionTexts_md.pkl', 'rb'))
+    question_texts = pickle.load(open('questionTexts_sm.pkl', 'rb'))
 
 # Preprocess for cython code
 tfidf_c.init_globals(1, True, "coarse", 64)
