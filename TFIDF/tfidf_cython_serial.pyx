@@ -68,6 +68,8 @@ cdef:
   unsigned [:,:] tf_vectors
   float [:,:] tfidf_vectors
   float [:] idf_vector
+  uint32_t* simhashes32
+  int64_t* simhashes64 
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -236,7 +238,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
 
 # might need boundscheck and wraparound false
 cpdef calculate_simhashes(unsigned size):
-  global word_indices, question_texts, simhashes, num_threads, tfidf_vectors
+  global word_indices, question_texts, simhashes32, simhashes64, num_threads, tfidf_vectors
   cdef:
     unsigned i, j, counter
     float weight
@@ -246,24 +248,24 @@ cpdef calculate_simhashes(unsigned size):
     float [:] W
 
   if (size == 64):
-    simhashes = <int64_t*>malloc(num_questions * sizeof(int64_t))
+    simhashes64 = <int64_t*>malloc(num_questions * sizeof(int64_t))
   elif (size == 32):
-    simhashes = <uint32_t*>malloc(num_questions * sizeof(uint32_t))
+    simhashes32 = <uint32_t*>malloc(num_questions * sizeof(uint32_t))
   # default, right now 64
   else:
-    simhashes = <int64_t*>malloc(num_questions * sizeof(int64_t))
-  for u in prange(len(question_texts),
+    simhashes64 = <int64_t*>malloc(num_questions * sizeof(int64_t))
+  for u in prange(num_questions,
                   nogil=True,
                   chunksize=1,
                   num_threads=num_threads,
                   schedule='static'):
     W = np.zeros(size)
-    for i in range(len(question_texts[u])):
+    for i in xrange(num_words_per_question[u]):
       word = question_texts[u][i]
-      iter_value = word_indices.find(string(question_texts[i][j]))
+      iter_value = word_indices.find(string(question_texts[u][i]))
       if word_indices.end() != iter_value :
         word_index = dereference(iter_value).second
-        weight = tfidf_vectors[u][word_index]
+        weight = tfidf_vectors[u, word_index]
         counter = size-1
         if (size == 32):
           wordhash32 = hash32(string(word))
@@ -288,19 +290,19 @@ cpdef calculate_simhashes(unsigned size):
             counter -= 1
     if (size == 32):
       simhash32 = 0
-      for i in range(len(W)):
+      for i in range(size):
         if W[i] >= 0:
           simhash32 += 1
-        if i < len(W)-1:
+        if i < size-1:
           simhash32 = simhash32 << 1
       simhashes[u] = simhash32
     # if size is 64
     else:
       simhash64 = 0
-      for i in range(len(W)):
+      for i in range(size):
         if W[i] >= 0:
           simhash64 += 1
-        if i < len(W)-1:
+        if i < size-1:
           simhash64 = simhash64 << 1
         simhashes[u] = simhash64
   return simhashes
