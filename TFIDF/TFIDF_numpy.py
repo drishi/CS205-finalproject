@@ -111,10 +111,16 @@ def calculate_cossims() :
     norms = np.sum(np.abs(tfidf_vectors)**2,axis=-1)**(1./2)
     I = norms > 0
     u_vectors = np.zeros(tfidf_vectors.shape)
-    u_vectors = tfidf_vectors[I] / norms[I][:, None]
+    u_vectors[I] = tfidf_vectors[I] / norms[I][:, None]
     cossims = u_vectors.dot(u_vectors.T)
   print_t(t, "calculate_cossims")
   return cossims
+
+def numBits64(i):
+    i = i - ((i >> np.uint64(1)) & np.uint64(0x5555555555555555))
+    i = (i & np.uint64(0x3333333333333333)) + ((i >> np.uint64(2)) & np.uint64(0x3333333333333333))
+    i = ((i + (i >> np.uint64(4))) & np.uint64(0x0F0F0F0F0F0F0F0F))
+    return (i*(np.uint64(0x0101010101010101)))>>np.uint64(56)
 
 def calculate_simhashes() :
   global word_indices, question_texts, tfidf_vectors, simhashes
