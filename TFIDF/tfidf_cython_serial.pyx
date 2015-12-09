@@ -159,7 +159,7 @@ cpdef create_tfs() :
     unsigned i, j, word_index
   for i in prange(num_questions, 
                   nogil=True, 
-                  chunksize=num_questions/8, 
+                  chunksize=1, 
                   num_threads=num_threads, 
                   schedule="static") :
     for j in xrange(num_words_per_question[i]) :
@@ -185,7 +185,7 @@ cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr, unsigned num_lock
 
   for i in prange(num_questions,
                   nogil=True, 
-                  chunksize=num_questions/8, 
+                  chunksize=1, 
                   num_threads=num_threads, 
                   schedule="static") :
     tid = threadid()
@@ -257,7 +257,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
   else :
     for i in prange(num_questions,
                     nogil=True, 
-                    chunksize=num_questions/4, 
+                    chunksize=1, 
                     num_threads=num_threads, 
                     schedule="static") :
       for j in range(num_indices) :
