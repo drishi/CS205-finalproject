@@ -119,7 +119,7 @@ def calculate_cossims() :
 def calculate_simhashes() :
   global word_indices, question_texts, tfidf_vectors, simhashes
   with Timer() as t :
-    simhashes = []
+    simhashes = np.zeros(len(question_texts)).astype(np.int64)
     for u in range(len(question_texts)):
       W = np.zeros(64)
       for i in range(len(question_texts[u])):
@@ -136,22 +136,24 @@ def calculate_simhashes() :
                 W[counter] -= tfidf_vectors[u][word_indices[word]]
             wordhash = wordhash >> 1
             counter -= 1
-      simhash = 0
       for i in range(len(W)):
           if W[i] >= 0:
-              simhash += 1
+              simhashes[u] += 1
           if i < len(W)-1:
-              simhash = simhash << 1
-      simhashes.append(simhash)
+              simhashes[u] = simhashes[u] << 1
   print_t(t, "calculate_simhashes")
   return simhashes
 
 def calculate_distances() :
   global simhashes
   with Timer() as t :
-    A = np.array([simhashes] * len(simhashes))
-    distances = numBits64(A ^ A.T)
-  print_t(t, "calculate_distances")
+    distances = np.zeros([len(simhashes), len(simhashes)]).astype(np.int64)
+  print_t(t, "calculate_distances, init")        
+  with Timer() as t :
+    for i in range(len(simhashes)) :
+      distances[i] = simhashes ^ simhashes[i]
+    distances = numBits64(distances)
+  print_t(t, "calculate_distances, compute")
   return distances
 
 def numBits64(i):
