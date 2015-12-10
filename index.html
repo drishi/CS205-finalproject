@@ -1,47 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-us">
   <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <meta charset="UTF-8">
+    <title>Cs205-finalproject by drishi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
-
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-
-    <title>Cs205-finalproject by samighoche</title>
   </head>
-
   <body>
-    <header>
-      <div class="inner">
-        <h1>Cs205-finalproject</h1>
-        <h2>CS205 final project, parallel computation</h2>
-        <a href="https://github.com/samighoche/CS205-finalproject" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
+    <section class="page-header">
+      <h1 class="project-name">Cs205-finalproject</h1>
+      <h2 class="project-tagline">CS205 final project, parallel computation</h2>
+      <a href="https://github.com/drishi/CS205-finalproject" class="btn">View on GitHub</a>
+      <a href="https://github.com/drishi/CS205-finalproject/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/drishi/CS205-finalproject/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <p>Project Motivation: Problem We Solve
-    In the world today, there has been an explosion of content generation that has began to force us to think more critically about how we can best organize our data. Every single day, more than 92,000 articles are posted to the web1, leaving social media websites, news aggregators and the like scrambling to figure out what to best serve you and keep you engaged. In addition to helping ensure that users get content that is tailored to their individual interests, clustering such a corpus by content similarity is critical to ensure that the massive amount of redundancy in these articles aren’t repeated in a user’s feed and that they get a diverse set of topics to explore. In another sense, if we find a topic that a user would like to read more on, clustering also enables us to delve deeper into that category and discover more written on it. 
-Unfortunately, the scale which we have described here does not lend itself well to 
+    <section class="main-content">
+      <h1>
+<a id="project-motivation-problem-we-solve" class="anchor" href="#project-motivation-problem-we-solve" aria-hidden="true"><span class="octicon octicon-link"></span></a>Project Motivation: Problem We Solve</h1>
+
+<pre><code>In the world today, there has been an explosion of content generation that has began to force us to think more critically about how we can best organize our data. Every single day, more than 92,000 articles are posted to the web &lt;sup&gt; 1 &lt;/sup&gt;, leaving social media websites, news aggregators and the like scrambling to figure out what to best serve you and keep you engaged. In addition to helping ensure that users get content that is tailored to their individual interests, clustering such a corpus by content similarity is critical to ensure that the massive amount of redundancy in these articles aren’t repeated in a user’s feed and that they get a diverse set of topics to explore. In another sense, if we find a topic that a user would like to read more on, clustering also enables us to delve deeper into that category and discover more written on it. 
+</code></pre>
+
+<p>Unfortunately, the scale which we have described here does not lend itself well to 
 traditional clustering algorithms as they are extremely computationally intensive and thus cannot run in near real-time (a property we would desire if we were to deploy any of these into a real-world application today). Such algorithms typically run by:
 Converting each document in the corpus into a vector. We use TFIDF for this, which will be described later. 
 Calculating either similarities (i.e. cosine similarity) or distances between vectors to have a notion of “relatedness”. 
 Use a clustering algorithm that then uses the measure computed before to organize our corpus. We use DBSCAN for this aspect, an award winning algorithm that does density-based clustering.
-With a large number of documents all of these steps, and especially calculating similarity/distance, takes a large amount of time. Thus, we decided this would be an ideal problem for us to optimize using parallelism and other techniques (such as dimensionality reduction) to try to bring to near real-time performance so that our implementation could allow a user could feed in a large set of documents into our system and see the clusters and categories that result.
-1. <a href="http://www.slideshare.net/chartbeat/mockup-infographicv4-27900399">http://www.slideshare.net/chartbeat/mockup-infographicv4-27900399</a></p>
+With a large number of documents all of these steps, and especially calculating similarity/distance, takes a large amount of time. Thus, we decided this would be an ideal problem for us to optimize using parallelism and other techniques (such as dimensionality reduction) to try to bring to near real-time performance so that our implementation could allow a user could feed in a large set of documents into our system and see the clusters and categories that result.</p>
 
 <p>Data Described:
     In lieu of articles, our corpus of documents consisted of posts that we pulled from Stack Overflow using their API. We did this because we were initially just interested in doing tag recommendation for questions users had posted, but after working on our project for a few weeks realized that our approach could be used to solve an even harder problem, namely clustering large sets of documents efficiently. Also, the posts were well-formated within the API, we had access to a large number of them, and there were many logical comparisons and similarities to make across posts (i.e. posts about a bug versus posts about style questions, etc). In order to get access to Stack Overflow’s API, we registered ourselves with their system, received an API key and then proceeded to pull 540,000 posts and their related attributes from the website. This was an extremely large set to work with and place into memory, and so we often worked with a subset of the posts of between 20,000 to 40,000 questions. </p>
 
-<p>Although the posts had several attributes (such as author, score, etc), we focused on just the body of the post as we wanted our approach to be extensible for all other forms of text content. Questions were in html format, so we used BeautifulSoup to extract relevant text and then use the nltk library to stem words.  In order to simplify data processing for later steps, specifically when passing python strings to cython code, we also forced all words to be encoded ascii format.</p>
+<p>Although the posts had several attributes (such as author, score, etc), we focused on just the body of the post as we wanted our approach to be extensible for all other forms of text content. Once we loaded in the questions, we did some post-processing to 
+//TODO: SAMI -- Discuss briefly the post-processing involved in stemming, etc. 
+George knows better here, beautiful soup and shit</p>
 
 <p>Insights:
 [This section should come after “Results” aka “Performance of your code”]
@@ -49,7 +45,7 @@ With a large number of documents all of these steps, and especially calculating 
 
 <p>Extent of Speed-Ups
 To start with, the immediate result of our project is something we were very interested in seeing and and are proud of: all of optimizations reduced this problem we tried to solve from taking 653.45 seconds in serial python to just 3.87 seconds in our implementation. 
-While our speed-ups come from many places as described in our results, two that are particularly interesting to look at are the optimizations made in moving our calculations of Simhashes and of Distances in python to cython. To recap, calculating Simhashes goes from taking 158.81 seconds to just 0.1429 seconds (a 1111x speedup) and calculating distances goes from taking 392.14 seconds to 3.34 seconds (a 117x speedup). Both of these likely reap strong benefits from bit-shifting transitioning from the python numpy code to the cython code which is apparently able to execute these instructions much more quickly. More specifically, by compiing these bitwise operations, the compiler is allowed to optimize our computation by removing function calls and inlining operators.  This also has the effect of removing the need to allocate stack space for function calls, which ultimately causes the large speedup we see.</p>
+While our speed-ups come from many places as described in our results, two that are particularly interesting to look at are the optimizations made in moving our calculations of Simhashes and of Distances in python to cython. To recap, calculating Simhashes goes from taking 158.81 seconds to just 0.1429 seconds (a 1111x speedup) and calculating distances goes from taking 392.14 seconds to 3.34 seconds (a 117x speedup). Both of these likely reap strong benefits from bit-shifting transitioning from the python numpy code to the cython code which is apparently able to execute these instructions much more quickly. In addition, calculating the Simhashes may also be sped up by... //TODO: George or Sami any idea why Simhashes gets so much faster other than the bit-shifting?</p>
 
 <p>Cluster Similarity
     One aspect of this project we were very interested to see results for was how much our method of dimensionality reduction (Simhashing) leading to information loss actually translates into clustering differences. As a reminder, simhashing takes our 300,000 byte vector and translates it into a much smaller fingerprint of 8 bytes for our Simhash64 implementation and half that size (4 bytes) for our Simhash32 implementation. 
@@ -63,10 +59,7 @@ While our speed-ups come from many places as described in our results, two that 
 <p><strong><em>SAMIIIII : I thought I was going to talk about the locking (u-shape curve) and the threading (4 often times does better than 8) in insights but I read your section and you already have this stuff in there. Let me know if you want me to add it here instead. Also, saw you made a note of chunk size differences after I left so let me know if I got what you were saying. 
 Locking
 Threading: 4 vs 8<br>
-*</em></strong>
-
-<p>Memory Allocation
-  A final interesting result we noticed is that much of our time in cython isn't spent computing, but instead initializing vectors or matrices to store our results.  These sections weren't parallelized by us, and seem to be bottlenecked by the memory allocator of the sytem.  One thing to note though is that in a system meant to run continuously, we can amortize the cost of memory allocation by keeping these buffers in memory between runs, which would remove this slowdown.  </p>
+*</em></strong>GEORGEEEE: I know you had some insights you mentioned you wanted to add into the paper, please add any of them here!</p>
 
 <p>Proposed Extensions and Improvements
     Although we are very happy with the speedups and results we demonstrated over the course of this project, we have also put thought into potential extensions and improvements we could try in the future.</p>
@@ -123,7 +116,7 @@ We then implemented it in cython with prange and nogil.
 We also noticed that this operation was a great candidate for us to use AVX SIMD instructions: Instead of taking a TF vector of size M and an IDF vector of size M, and multiplying each ith entry of the TF vector by the ith entry of the IDF vector, we could multiply each group of 8 32-bit floats of the TF vector by the corresponding group of 8 32-bit floats of the IDF vector in the same instruction using SIMD instructions.
 Here is our performance as a function of the number of threads with and without SIMD instructions:</p>
 
-<p>From what we see, we notice that AVX does slightly better for 1,2, and 4 threads, but not 8 threads.  However, more importantly, looking at these results, we see that AVX gives marginal improvement.  Most likely, this is because of the cost of loading the AVX registers, as we only perform one floating point multiplication in AVX.  If we performed more mathematical operations, we might have seen different results.  GEORGEEEE UPDATE THIS, MAYBE IT’S BECAUSE I HAVE THE OLD INTEL CPU, AND YOUR RESULTS ARE DIFFERENT, SO I WONT INTERPRET THEM HERE. IF YOUR RESULTS ARE ACTUALLY DIFFERENT, GIVE THEM TO DEV AND HE’LL PRODUCE ANOTHER SIMILAR CHART, AND THEN YOU CAN INTERPRET THOSE RESULTS HERE</p>
+<p>GEORGEEEE UPDATE THIS, MAYBE IT’S BECAUSE I HAVE THE OLD INTEL CPU, AND YOUR RESULTS ARE DIFFERENT, SO I WONT INTERPRET THEM HERE. IF YOUR RESULTS ARE ACTUALLY DIFFERENT, GIVE THEM TO DEV AND HE’LL PRODUCE ANOTHER SIMILAR CHART, AND THEN YOU CAN INTERPRET THOSE RESULTS HERE</p>
 
 <p>Step 4 - Computing similarity / distance between every pair of TF-IDF vectors.
 Usually, at the stage of the algorithm, we would compute cosine similarities between every pair (A, B) of TF-IDF vectors according to this formula:</p>
@@ -157,6 +150,13 @@ int NumberOfSetBits64(long long i)
 We implemented this distance computation first in numpy and ran it in 392.14 seconds.
 We then implemented it in cython with prange and nogil, and obtained the following performance, as a function of the number of threads:</p>
 
+<h2>
+<a id="works-cited" class="anchor" href="#works-cited" aria-hidden="true"><span class="octicon octicon-link"></span></a>Works Cited</h2>
+
+<ol>
+<li><a href="http://www.slideshare.net/chartbeat/mockup-infographicv4-27900399">http://www.slideshare.net/chartbeat/mockup-infographicv4-27900399</a></li>
+</ol>
+
 <h3>
 <a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
 
@@ -181,24 +181,14 @@ We then implemented it in cython with prange and nogil, and obtained the followi
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
 <p>Having trouble with Pages? Check out our <a href="https://help.github.com/pages">documentation</a> or <a href="https://github.com/contact">contact support</a> and we’ll help you sort it out.</p>
-        </section>
 
-        <aside id="sidebar">
-          <a href="https://github.com/samighoche/CS205-finalproject/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/samighoche/CS205-finalproject/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/drishi/CS205-finalproject">Cs205-finalproject</a> is maintained by <a href="https://github.com/drishi">drishi</a>.</span>
 
-          <p class="repo-owner"><a href="https://github.com/samighoche/CS205-finalproject"></a> is maintained by <a href="https://github.com/samighoche">samighoche</a>.</p>
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
 
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
-    </div>
+    </section>
 
   
   </body>
