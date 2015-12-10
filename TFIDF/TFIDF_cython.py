@@ -17,17 +17,18 @@ from timer import Timer
 def print_t(t, string) :
   print "Time for " + string + ": " + str(t.interval)
 
-def init_globals(N=4, use_AVX = False, hash_size = 64, num_locks = 1) :
+def init_globals(N=4, use_AVX = False, hash_size = 64, n_locks = 1) :
   '''
   Load questions into memory
   '''
-  global AVX_f, size, lock_t
+  global AVX_f, size, lock_t, num_locks
   with Timer() as t :
     tfidf.init_globals(N)
   print_t(t, "Initialization")
   AVX_f = use_AVX
   assert(hash_size == 64 or hash_size == 32)
   size = hash_size
+  num_locks = n_locks
 
   print "Using {0} threads".format(N)
 
@@ -36,7 +37,7 @@ def init_globals(N=4, use_AVX = False, hash_size = 64, num_locks = 1) :
 
   print "Using {0} hash size".format(hash_size)
 
-  print "Using {0} locks".format(num_locks)
+  print "Using {0} locks".format(n_locks)
 
 def load_questions(questions) :
   '''

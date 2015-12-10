@@ -9,9 +9,9 @@ sys.path.append(os.path.join('', 'util'))
 
 import TFIDF_numpy as tfidf
 
-word_indices = pickle.load(open('wordIndices_sm.pkl', 'rb'))
+word_indices = pickle.load(open('data/wordIndices_sm.pkl', 'rb'))
 
-question_texts = pickle.load(open('questionTexts_sm.pkl', 'rb'))
+question_texts = pickle.load(open('data/questionTexts_sm.pkl', 'rb'))
     
 tfidf.init_globals()
 tfidf.load_questions(question_texts)
