@@ -17,17 +17,27 @@ from timer import Timer
 def print_t(t, string) :
   print "Time for " + string + ": " + str(t.interval)
 
-def init_globals(N, use_AVX = False, lock_type = "coarse", hash_size = 64) :
+def init_globals(N=4, use_AVX = False, hash_size = 64, n_locks = 1) :
   '''
   Load questions into memory
   '''
-  global AVX_f, size, lock_t
+  global AVX_f, size, lock_t, num_locks
   with Timer() as t :
     tfidf.init_globals(N)
   print_t(t, "Initialization")
   AVX_f = use_AVX
-  lock_t = lock_type
+  assert(hash_size == 64 or hash_size == 32)
   size = hash_size
+  num_locks = n_locks
+
+  print "Using {0} threads".format(N)
+
+  if use_AVX :
+    print "Using AVX"
+
+  print "Using {0} hash size".format(hash_size)
+
+  print "Using {0} locks".format(n_locks)
 
 def load_questions(questions) :
   '''
@@ -69,8 +79,8 @@ def create_tfs() :
   print_t(t, "create_tfs")
   return tfs
 
-def calculate_idf(num_locks) :
-  global num_keys
+def calculate_idf() :
+  global num_keys, num_locks
   with Timer() as t:
     locks_ptr = tfidf.preallocate_locks(num_locks)
     idf = tfidf.calculate_idf(num_keys, locks_ptr, num_locks)
@@ -123,8 +133,18 @@ def calculate_distances():
   global size, simhashes
   with Timer() as t:
     if size == 64:
+      tfidf.init_distances64()
+    else:
+      tfidf.init_distances32()
+  print_t(t, "calculate_distances, init")
+  with Timer() as t:
+    if size == 64:
       distances = tfidf.calculate_distances64(size)
     else:
       distances = tfidf.calculate_distances32(size)
-  print_t(t, "calculate distances")
+  print_t(t, "calculate distances, compute")
   return distances
+
+def cleanup() :
+  tfidf.cleanup()
+  print "Done Cleanup"

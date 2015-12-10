@@ -1,9 +1,10 @@
 /*
-   Modifed 12/6/2015
-   Author: George Lok
+   Modifed 12/6/2015 by George Lok
    Declared simple hash functions as static in order for
    easy compilation via cython
    
+   -----------------------------------------------------
+
    xxHash - Extremely Fast Hash algorithm
    Header File
    Copyright (C) 2012-2015, Yann Collet.

@@ -1,6 +1,8 @@
 /*
  * Cython C++ Shim for AVX
  * Author: George Lok
+ *
+ * Based on AVX.h by CS205
  */
 extern "C" {
   #include <math.h>

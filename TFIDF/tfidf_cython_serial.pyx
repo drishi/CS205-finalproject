@@ -25,10 +25,10 @@ cdef extern from "xxhash.c" nogil:
     unsigned XXH32 (const void*, size_t, unsigned)
     unsigned long long XXH64 (const void*, size_t, unsigned long long)
 
-cpdef uint64_t hash64(string str1) nogil:
+cpdef inline uint64_t hash64(string str1) nogil:
   return XXH64(<const void*> str1.c_str(), str1.length(), 0)
   
-cpdef uint32_t hash32(string str1) nogil:
+cpdef inline uint32_t hash32(string str1) nogil:
   return XXH32(<const void*> str1.c_str(), str1.length(), 0)    
 
 def preallocate_locks(num_locks) :
@@ -84,6 +84,17 @@ cdef:
   uint64_t [:] simhashes64
   unsigned [:, :] distances64
   unsigned [:, :] distances32 
+  AVX.float8 *idf_float8s
+
+
+cpdef cleanup() :
+  global num_questions, question_texts, idf_float8s, num_words_per_question
+  free(idf_float8s)
+  for i in xrange(num_questions) :
+    free(question_texts[i])
+  free(question_texts)
+  free(num_words_per_question)
+
 
 cpdef init_globals(N) :
   global word_indices, num_threads
@@ -198,22 +209,27 @@ cpdef calculate_idf(unsigned num_indices, uintptr_t locks_ptr, unsigned num_lock
   return idf_vector
 
 cpdef init_tfidfs(unsigned num_indices) :
-  global tfidf_vectors, num_threads, word_indices
+  global tfidf_vectors, num_threads, word_indices, idf_float8s
   tfidf_vectors = np.copy(tf_vectors).astype(np.float32)
-
+  idf_float8s = <AVX.float8 *>malloc(num_indices / 8 * sizeof(AVX.float8))
+  
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
-  global tfidf_vectors, idf_vector, tf_vectors
+  global tfidf_vectors, idf_vector, tf_vectors, idf_float8s, num_threads
   cdef:
     AVX.float8 tfidf_float8, result_float8
-    AVX.float8 *idf_float8s
-    unsigned i, j
+    unsigned i, j, j_index
+
+  chunksize_j = (num_indices/(8*num_threads))
+  chunksize_i = (num_questions/num_threads)
 
   if AVX_f :
-    assert(num_indices % 8 == 0)
-    idf_float8s = <AVX.float8 *>malloc(num_indices / 8 * sizeof(AVX.float8))
-    for j in range(0, num_indices, 8) :
+    for j in prange(0, num_indices, 8, 
+                    nogil=True, 
+                    chunksize=chunksize_j,
+                    num_threads=num_threads, 
+                    schedule="static") :
         idf_float8s[j/8] = AVX.make_float8(idf_vector[j+7],
                                   idf_vector[j+6],
                                   idf_vector[j+5],
@@ -224,7 +240,7 @@ cpdef calculate_tfidfs(unsigned num_indices, AVX_f) :
                                   idf_vector[j])
     for i in prange(num_questions,
                     nogil=True, 
-                    chunksize=1, 
+                    chunksize=chunksize_i,
                     num_threads=num_threads, 
                     schedule="static") :
       for j in range(0, num_indices, 8) :
@@ -262,9 +278,10 @@ cpdef calculate_simhashes64(unsigned size):
     float [:,:] W = np.zeros([num_threads, size]).astype(np.float32)
 
   simhashes64 = np.zeros(num_questions).astype(np.uint64)
+  chunksize = (num_questions/num_threads)
   for u in prange(num_questions,
                   nogil=True,
-                  chunksize=1,
+                  chunksize=chunksize,
                   num_threads=num_threads,
                   schedule='static'):
     tid = threadid()
@@ -313,9 +330,10 @@ cpdef calculate_simhashes32(unsigned size):
     float [:,:] W = np.zeros([num_threads, size]).astype(np.float32)
 
   simhashes32 = np.zeros(num_questions).astype(np.uint32)
+  chunksize = (num_questions/num_threads)
   for u in prange(num_questions,
                   nogil=True,
-                  chunksize=1,
+                  chunksize=chunksize,
                   num_threads=num_threads,
                   schedule='static'):
     tid = threadid()
@@ -349,40 +367,51 @@ cpdef calculate_simhashes32(unsigned size):
       W[tid, i] = 0
   return simhashes32
 
+cpdef init_distances64() :
+  global num_questions, distances64
+  distances64 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef calculate_distances64(unsigned size):
   global num_questions, simhashes64, num_threads, distances64
   cdef:
     unsigned i, j
 
-  distances64 = np.zeros([num_questions, num_questions]).astype(np.uint32)
+  chunksize = (num_questions/num_threads)
 
-  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+  for i in prange(num_questions, nogil=True, chunksize=chunksize, num_threads=num_threads, schedule='static'):
     for j in xrange(num_questions):
       distances64[i, j] = numBits64(simhashes64[i] ^ simhashes64[j])
   return distances64
 
 #The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
 
-cdef unsigned numBits64(uint64_t i) nogil:
+cdef inline unsigned numBits64(uint64_t i) nogil:
   i = i - ((i >> <uint64_t>1) & <uint64_t> 0x5555555555555555)
   i = (i & <uint64_t> 0x3333333333333333) + ((i >> <uint64_t> 2) & <uint64_t> 0x3333333333333333)
   i = ((i + (i >> <uint64_t> 4)) & <uint64_t> 0x0F0F0F0F0F0F0F0F)
   return (i*(<uint64_t> 0x0101010101010101))>> <uint64_t> 56
 
+cpdef init_distances32() :
+  global num_questions, distances32
+  distances32 = np.zeros([num_questions, num_questions]).astype(np.uint32)
 
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef calculate_distances32(unsigned size):
   global num_questions, simhashes32, num_threads, distances32
   cdef:
     unsigned i, j
 
-  distances32 = np.zeros([num_questions, num_questions]).astype(np.uint32)
-
-  for i in prange(num_questions, nogil=True, chunksize=1, num_threads=num_threads, schedule='static'):
+  chunksize = (num_questions/num_threads)
+  for i in prange(num_questions, nogil=True, chunksize=chunksize, num_threads=num_threads, schedule='static'):
     for j in xrange(num_questions):
       distances32[i, j] = numBits32(simhashes32[i] ^ simhashes32[j])
   return distances32 
 
-cdef unsigned numBits32(uint64_t i) nogil:
+cdef inline unsigned numBits32(uint64_t i) nogil:
     i = i - ((i >> 1) & 0x55555555)
     i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
     i = ((i + (i >> 4)) & 0x0F0F0F0F)

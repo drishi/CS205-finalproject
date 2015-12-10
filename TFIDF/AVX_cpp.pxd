@@ -1,5 +1,7 @@
 # Cython Definition file for AVX_cpp.h
 # Author: George Lok
+# Based on AVX.pxd by CS205
+
 cdef extern from "AVX_cpp.h" nogil:
     ctypedef struct float8:
         pass
