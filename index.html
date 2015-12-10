@@ -41,9 +41,7 @@ With a large number of documents all of these steps, and especially calculating 
 <p>Data Described:
     In lieu of articles, our corpus of documents consisted of posts that we pulled from Stack Overflow using their API. We did this because we were initially just interested in doing tag recommendation for questions users had posted, but after working on our project for a few weeks realized that our approach could be used to solve an even harder problem, namely clustering large sets of documents efficiently. Also, the posts were well-formated within the API, we had access to a large number of them, and there were many logical comparisons and similarities to make across posts (i.e. posts about a bug versus posts about style questions, etc). In order to get access to Stack Overflow’s API, we registered ourselves with their system, received an API key and then proceeded to pull 540,000 posts and their related attributes from the website. This was an extremely large set to work with and place into memory, and so we often worked with a subset of the posts of between 20,000 to 40,000 questions. </p>
 
-<p>Although the posts had several attributes (such as author, score, etc), we focused on just the body of the post as we wanted our approach to be extensible for all other forms of text content. Once we loaded in the questions, we did some post-processing to 
-//TODO: SAMI -- Discuss briefly the post-processing involved in stemming, etc. 
-George knows better here, beautiful soup and shit</p>
+<p>Although the posts had several attributes (such as author, score, etc), we focused on just the body of the post as we wanted our approach to be extensible for all other forms of text content. Questions were in html format, so we used BeautifulSoup to extract relevant text and then use the nltk library to stem words.  In order to simplify data processing for later steps, specifically when passing python strings to cython code, we also forced all words to be encoded ascii format.</p>
 
 <p>Insights:
 [This section should come after “Results” aka “Performance of your code”]
@@ -51,7 +49,7 @@ George knows better here, beautiful soup and shit</p>
 
 <p>Extent of Speed-Ups
 To start with, the immediate result of our project is something we were very interested in seeing and and are proud of: all of optimizations reduced this problem we tried to solve from taking 653.45 seconds in serial python to just 3.87 seconds in our implementation. 
-While our speed-ups come from many places as described in our results, two that are particularly interesting to look at are the optimizations made in moving our calculations of Simhashes and of Distances in python to cython. To recap, calculating Simhashes goes from taking 158.81 seconds to just 0.1429 seconds (a 1111x speedup) and calculating distances goes from taking 392.14 seconds to 3.34 seconds (a 117x speedup). Both of these likely reap strong benefits from bit-shifting transitioning from the python numpy code to the cython code which is apparently able to execute these instructions much more quickly. In addition, calculating the Simhashes may also be sped up by... //TODO: George or Sami any idea why Simhashes gets so much faster other than the bit-shifting?</p>
+While our speed-ups come from many places as described in our results, two that are particularly interesting to look at are the optimizations made in moving our calculations of Simhashes and of Distances in python to cython. To recap, calculating Simhashes goes from taking 158.81 seconds to just 0.1429 seconds (a 1111x speedup) and calculating distances goes from taking 392.14 seconds to 3.34 seconds (a 117x speedup). Both of these likely reap strong benefits from bit-shifting transitioning from the python numpy code to the cython code which is apparently able to execute these instructions much more quickly. More specifically, by compiing these bitwise operations, the compiler is allowed to optimize our computation by removing function calls and inlining operators.  This also has the effect of removing the need to allocate stack space for function calls, which ultimately causes the large speedup we see.</p>
 
 <p>Cluster Similarity
     One aspect of this project we were very interested to see results for was how much our method of dimensionality reduction (Simhashing) leading to information loss actually translates into clustering differences. As a reminder, simhashing takes our 300,000 byte vector and translates it into a much smaller fingerprint of 8 bytes for our Simhash64 implementation and half that size (4 bytes) for our Simhash32 implementation. 
@@ -65,7 +63,10 @@ While our speed-ups come from many places as described in our results, two that 
 <p><strong><em>SAMIIIII : I thought I was going to talk about the locking (u-shape curve) and the threading (4 often times does better than 8) in insights but I read your section and you already have this stuff in there. Let me know if you want me to add it here instead. Also, saw you made a note of chunk size differences after I left so let me know if I got what you were saying. 
 Locking
 Threading: 4 vs 8<br>
-*</em></strong>GEORGEEEE: I know you had some insights you mentioned you wanted to add into the paper, please add any of them here!</p>
+*</em></strong>
+
+<p>Memory Allocation
+  A final interesting result we noticed is that much of our time in cython isn't spent computing, but instead initializing vectors or matrices to store our results.  These sections weren't parallelized by us, and seem to be bottlenecked by the memory allocator of the sytem.  One thing to note though is that in a system meant to run continuously, we can amortize the cost of memory allocation by keeping these buffers in memory between runs, which would remove this slowdown.  </p>
 
 <p>Proposed Extensions and Improvements
     Although we are very happy with the speedups and results we demonstrated over the course of this project, we have also put thought into potential extensions and improvements we could try in the future.</p>
@@ -122,7 +123,7 @@ We then implemented it in cython with prange and nogil.
 We also noticed that this operation was a great candidate for us to use AVX SIMD instructions: Instead of taking a TF vector of size M and an IDF vector of size M, and multiplying each ith entry of the TF vector by the ith entry of the IDF vector, we could multiply each group of 8 32-bit floats of the TF vector by the corresponding group of 8 32-bit floats of the IDF vector in the same instruction using SIMD instructions.
 Here is our performance as a function of the number of threads with and without SIMD instructions:</p>
 
-<p>GEORGEEEE UPDATE THIS, MAYBE IT’S BECAUSE I HAVE THE OLD INTEL CPU, AND YOUR RESULTS ARE DIFFERENT, SO I WONT INTERPRET THEM HERE. IF YOUR RESULTS ARE ACTUALLY DIFFERENT, GIVE THEM TO DEV AND HE’LL PRODUCE ANOTHER SIMILAR CHART, AND THEN YOU CAN INTERPRET THOSE RESULTS HERE</p>
+<p>From what we see, we notice that AVX does slightly better for 1,2, and 4 threads, but not 8 threads.  However, more importantly, looking at these results, we see that AVX gives marginal improvement.  Most likely, this is because of the cost of loading the AVX registers, as we only perform one floating point multiplication in AVX.  If we performed more mathematical operations, we might have seen different results.  GEORGEEEE UPDATE THIS, MAYBE IT’S BECAUSE I HAVE THE OLD INTEL CPU, AND YOUR RESULTS ARE DIFFERENT, SO I WONT INTERPRET THEM HERE. IF YOUR RESULTS ARE ACTUALLY DIFFERENT, GIVE THEM TO DEV AND HE’LL PRODUCE ANOTHER SIMILAR CHART, AND THEN YOU CAN INTERPRET THOSE RESULTS HERE</p>
 
 <p>Step 4 - Computing similarity / distance between every pair of TF-IDF vectors.
 Usually, at the stage of the algorithm, we would compute cosine similarities between every pair (A, B) of TF-IDF vectors according to this formula:</p>
