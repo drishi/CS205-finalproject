@@ -81,7 +81,7 @@ tfidf_c.cleanup()
 
 # Create clusters
 print "Calculating Clusters" 
-db64 = DBSCAN(metric="precomputed", eps=2, min_samples=3).fit(cython_distances)
+db64 = DBSCAN(metric="precomputed", eps=1, min_samples=3).fit(cython_distances)
 
 print "Number of documents: " + str(sum(map(lambda x: 1 if x >= 0 else 0, db64.labels_)))
 
