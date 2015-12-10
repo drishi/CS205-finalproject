@@ -229,9 +229,13 @@ The most frustrating part was dealing with all the compilation errors in cython 
 <p>Install webbrowser in order to visualize the results of our clustering. 
 The best way is to ‘pip install webbrowser’
 <a href="https://docs.python.org/2/library/webbrowser.html">https://docs.python.org/2/library/webbrowser.html</a>
+<br>
 1- Clone the repo
+<br>
 2- cd into TFIDF directory
+<br>
 3- run "python run_cython.py"
+<br>
 You will be prompted to enter the number of threads, then whether you want to use SIMD instructions or not, then what size Simhash fingerprint you would like to use (64 or 32 bits), and finally, how many locks you would like to use in the IDF step.
 When the program is done clustering, you will be prompted to pick a cluster number (you may pick one at random).
 The program will open up to 5 pages on your browser that correspond to questions that belong to the cluster you chose. </p>
