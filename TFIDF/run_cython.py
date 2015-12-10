@@ -8,7 +8,7 @@ sys.path.append(os.path.join('', 'TFIDF'))
 sys.path.append(os.path.join('..', 'util'))
 sys.path.append(os.path.join('', 'util'))
 
-import TFIDF_cython as tfidf_c
+import tfidf_cython_wrapper as tfidf_c
 
 questions = pickle.load(open('data/questions_sm.pkl', 'rb'))
 word_indices = pickle.load(open('data/wordIndices_sm.pkl', 'rb'))
@@ -63,7 +63,7 @@ while True :
 
 num_locks = raw_input('Number of Locks (number) [Default 20000]: ')
 if num_locks == '' :
-  num_locks = 2000
+  num_locks = 20000
 num_locks = int(num_locks)
 
 

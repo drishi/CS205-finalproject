@@ -7,7 +7,7 @@ sys.path.append(os.path.join('', 'TFIDF'))
 sys.path.append(os.path.join('..', 'util'))
 sys.path.append(os.path.join('', 'util'))
 
-import TFIDF_numpy as tfidf
+import tfidf_numpy as tfidf
 
 word_indices = pickle.load(open('data/wordIndices_sm.pkl', 'rb'))
 

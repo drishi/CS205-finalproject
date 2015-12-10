@@ -10,7 +10,7 @@ pyximport.install()
 
 import numpy as np
 
-import tfidf_cython_serial as tfidf
+import tfidf_cython as tfidf
 
 from timer import Timer
 

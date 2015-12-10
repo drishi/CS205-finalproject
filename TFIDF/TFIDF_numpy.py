@@ -1,3 +1,4 @@
+
 '''
 Numpy serial implemnation of TFIDF
 '''

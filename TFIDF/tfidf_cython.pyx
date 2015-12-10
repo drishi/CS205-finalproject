@@ -386,7 +386,6 @@ cpdef calculate_distances64(unsigned size):
   return distances64
 
 #The following are from https://yesteapea.wordpress.com/2013/03/03/counting-the-number-of-set-bits-in-an-integer/
-
 cdef inline unsigned numBits64(uint64_t i) nogil:
   i = i - ((i >> <uint64_t>1) & <uint64_t> 0x5555555555555555)
   i = (i & <uint64_t> 0x3333333333333333) + ((i >> <uint64_t> 2) & <uint64_t> 0x3333333333333333)
@@ -396,7 +395,6 @@ cdef inline unsigned numBits64(uint64_t i) nogil:
 cpdef init_distances32() :
   global num_questions, distances32
   distances32 = np.zeros([num_questions, num_questions]).astype(np.uint32)
-
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
